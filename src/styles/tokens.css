@@ -1,0 +1,25 @@
+:root {
+  --lynxly-color-bg: #fafafd;
+  --lynxly-color-bg-dark: #07101f;
+  --lynxly-color-surface: #ffffff;
+  --lynxly-color-surface-dark: #121b2a;
+  --lynxly-color-text: #10162f;
+  --lynxly-color-text-dark: #f7fbff;
+  --lynxly-space-1: 4px;
+  --lynxly-space-2: 8px;
+  --lynxly-space-3: 12px;
+  --lynxly-space-4: 16px;
+  --lynxly-space-5: 24px;
+  --lynxly-radius-control: 10px;
+  --lynxly-radius-card: 16px;
+  --lynxly-radius-hero: 24px;
+  --lynxly-radius-pill: 999px;
+  --lynxly-shadow-card: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --lynxly-shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.06);
+  --lynxly-z-nav: 30;
+  --lynxly-z-sheet: 60;
+  --lynxly-z-toast: 80;
+  --lynxly-motion-fast: 160ms ease;
+  --lynxly-motion-normal: 240ms ease;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

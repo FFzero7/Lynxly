@@ -1,0 +1,12 @@
+.app-shell {
+  padding-bottom: calc(88px + var(--safe-bottom));
+}
+
+.bottom-nav {
+  padding-bottom: calc(10px + var(--safe-bottom));
+  z-index: var(--lynxly-z-nav);
+}
+
+.main-content {
+  width: min(100%, 1180px);
+}

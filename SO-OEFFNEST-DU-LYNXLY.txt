@@ -1,0 +1,10 @@
+﻿LYNXLY ÖFFNEN
+
+1. Ordner öffnen.
+2. Doppelklick auf start-lynxly.bat.
+3. Browser öffnen: http://localhost:4173
+
+Falls das nicht geht:
+- Node.js installieren
+- Im Ordner Terminal öffnen
+- npm start eingeben
