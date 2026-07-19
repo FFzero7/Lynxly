@@ -494,8 +494,10 @@ const server = http.createServer((req, res) => {
 });
 
 if (require.main === module) {
-  server.listen(4173, "127.0.0.1", () => {
-    console.log("Lynxly running at http://127.0.0.1:4173");
+  const port = Number(process.env.PORT) || 4173;
+
+  server.listen(port, () => {
+    console.log(`Lynxly running on port ${port}`);
   });
 }
 
