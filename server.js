@@ -501,4 +501,6 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, isAllowedStaticPath };
+module.exports = server;
+module.exports.server = server;
+module.exports.isAllowedStaticPath = isAllowedStaticPath;
