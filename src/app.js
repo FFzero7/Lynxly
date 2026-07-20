@@ -1,5 +1,6 @@
 ﻿(function () {
   const app = document.querySelector("#app");
+  const bottomNav = document.querySelector(".bottom-nav");
   const navLinks = document.querySelectorAll("[data-route]");
   const materialNavButtons = document.querySelectorAll("[data-material-menu]");
   const xpPill = document.querySelector("#xp-pill");
@@ -8,6 +9,7 @@
   const xpLive = document.querySelector("#xp-live");
   const logoutButton = document.querySelector("#logout-button");
   const C = window.StudyUpComponents;
+  const schoolCatalog = window.LynxlySchoolCatalog || {};
   let state = window.StudyUpStorage.load();
   let cardSearchTimer = null;
   let matchTimer = null;
@@ -68,70 +70,39 @@
     { id: "apex-lynx", name: "Apex Lynx Liga", min: 4500, image: "/src/assets/leagues-optimized/apex-lynx.webp", fallback: "/src/assets/leagues-complete/apex-lynx.png" }
   ];
   const classLeagueCategory = { label: "XP", field: "weeklyXp", unit: "XP", note: "diese Woche gelernt" };
-  const countryOptions = [
-    { id: "CH", label: "Switzerland" },
-    { id: "DE", label: "Germany" },
-    { id: "AT", label: "Austria" },
-    { id: "US", label: "United States" },
-    { id: "UK", label: "United Kingdom" },
-    { id: "OTHER", label: "Other" }
+  const countryOptions = schoolCatalog.countries || [
+    { id: "CH", label: "Schweiz" },
+    { id: "DE", label: "Deutschland" },
+    { id: "AT", label: "Österreich" },
+    { id: "US", label: "USA" },
+    { id: "GB", label: "Vereinigtes Königreich" },
+    { id: "OTHER", label: "Anderes Land" }
   ];
   const schoolLevelOptions = {
     CH: [
-      { id: "primary", label: "Primarschule" },
-      { id: "secondary", label: "Sekundarschule" },
-      { id: "gymi", label: "Gymnasium / Gymi" },
-      { id: "apprenticeship", label: "Berufsschule" },
-      { id: "university", label: "Universität / FH" },
-      { id: "other", label: "Other" }
-    ],
-    DE: [
-      { id: "primary", label: "Grundschule" },
-      { id: "hauptschule", label: "Hauptschule" },
-      { id: "realschule", label: "Realschule" },
+      { id: "primary", label: "Primarstufe" },
+      { id: "secondary_I", label: "Sekundarstufe I" },
+      { id: "secondary_II", label: "Sekundarstufe II" },
       { id: "gymnasium", label: "Gymnasium" },
-      { id: "comprehensive", label: "Gesamtschule" },
-      { id: "apprenticeship", label: "Berufsschule" },
-      { id: "university", label: "Universität / Hochschule" },
-      { id: "other", label: "Other" }
-    ],
-    AT: [
-      { id: "primary", label: "Volksschule" },
-      { id: "middle", label: "Mittelschule" },
-      { id: "ahs", label: "AHS" },
-      { id: "bhs", label: "BHS" },
-      { id: "apprenticeship", label: "Berufsschule" },
+      { id: "vocational", label: "Berufsschule" },
       { id: "university", label: "Universität / FH" },
-      { id: "other", label: "Other" }
+      { id: "other", label: "Andere" }
     ],
-    US: [
-      { id: "elementary", label: "Elementary school" },
-      { id: "middle", label: "Middle school" },
-      { id: "high_school", label: "High school" },
-      { id: "university", label: "College / University" },
-      { id: "other", label: "Other" }
-    ],
-    UK: [
-      { id: "primary", label: "Primary school" },
-      { id: "secondary", label: "Secondary school" },
-      { id: "sixth_form", label: "Sixth form / College" },
-      { id: "university", label: "University" },
-      { id: "other", label: "Other" }
-    ],
-    OTHER: [
-      { id: "elementary", label: "Elementary school" },
-      { id: "middle", label: "Middle school" },
-      { id: "high_school", label: "High school" },
-      { id: "university", label: "University" },
-      { id: "other", label: "Other" }
+    OTHER: schoolCatalog.levels || [
+      { id: "primary", label: "Primarstufe" },
+      { id: "secondary_I", label: "Sekundarstufe I" },
+      { id: "secondary_II", label: "Sekundarstufe II" },
+      { id: "university", label: "Universität" },
+      { id: "other", label: "Andere" }
     ]
   };
-  const mainGoalOptions = [
-    { id: "grades", label: "Track grades" },
-    { id: "tests", label: "Prepare for tests" },
-    { id: "tasks", label: "Organize tasks" },
-    { id: "cards", label: "Study with cards" },
-    { id: "all", label: "All of the above" }
+  const mainGoalOptions = schoolCatalog.primaryGoals || [
+    { id: "better_grades", label: "Bessere Noten" },
+    { id: "exam_preparation", label: "Für Prüfungen lernen" },
+    { id: "task_organization", label: "Aufgaben organisieren" },
+    { id: "regular_study", label: "Regelmässiger lernen" },
+    { id: "understand_material", label: "Lernstoff verstehen" },
+    { id: "create_cards", label: "Eigene Lernkarten erstellen" }
   ];
   const schoolGradeSystems = [
     { id: "swiss_1_6", label: "Swiss 1-6", appId: "ch", language: "de-CH", higherIsBetter: true },
@@ -147,23 +118,49 @@
     cards: "Study with cards",
     all: "All of the above"
   };
+  const gradingScaleOptions = schoolCatalog.gradingScales || [];
+  const subjectSuggestionOptions = schoolCatalog.subjectSuggestions || subjectChoices.map((label) => ({ id: label.toLowerCase(), label }));
   const gradeSystemBySchoolId = (id) => schoolGradeSystems.find((system) => system.id === id) || schoolGradeSystems[0];
-  const countryById = (id) => countryOptions.find((country) => country.id === id) || countryOptions[0];
-  const levelsForCountry = (country) => schoolLevelOptions[country] || schoolLevelOptions.OTHER;
-  const levelById = (country, id) => levelsForCountry(country).find((level) => level.id === id) || levelsForCountry(country)[0];
+  const gradingScaleById = (id) => schoolCatalog.gradingScaleById ? schoolCatalog.gradingScaleById(id) : (gradingScaleOptions.find((scale) => scale.id === id) || gradingScaleOptions[0] || { id: "ch_1_to_6_high_is_good", appGradeSystem: "ch", language: "de-CH", higherIsBetter: true });
+  const normalizeCountryId = (id) => {
+    const value = String(id || "").toUpperCase();
+    if (value === "UK") return "GB";
+    return value || "CH";
+  };
+  const countryById = (id) => {
+    const raw = String(id || "").trim();
+    return countryOptions.find((country) => country.id === normalizeCountryId(raw))
+      || countryOptions.find((country) => country.label.toLocaleLowerCase() === raw.toLocaleLowerCase())
+      || countryOptions[0];
+  };
+  const educationSystemsForCountry = (country) => schoolCatalog.systemsForCountry ? schoolCatalog.systemsForCountry(country) : [{ id: "manual", label: "Anderes / manuell einrichten" }];
+  const educationSystemById = (country, id) => educationSystemsForCountry(country).find((system) => system.id === id) || educationSystemsForCountry(country)[0];
+  const defaultEducationSystemForCountry = (country) => schoolCatalog.defaultEducationSystemForCountry ? schoolCatalog.defaultEducationSystemForCountry(country) : educationSystemsForCountry(country)[0].id;
+  const levelsForEducationSystem = (systemId) => schoolCatalog.levelsForSystem ? schoolCatalog.levelsForSystem(systemId) : (schoolLevelOptions.OTHER || []);
+  const defaultLevelForEducationSystem = (systemId) => schoolCatalog.defaultLevelForSystem ? schoolCatalog.defaultLevelForSystem(systemId) : levelsForEducationSystem(systemId)[0]?.id || "secondary_II";
+  const levelsForCountry = (country, systemId = "") => systemId ? levelsForEducationSystem(systemId) : (schoolLevelOptions[country] || schoolLevelOptions.OTHER);
+  const levelById = (country, id, systemId = "") => levelsForCountry(country, systemId).find((level) => level.id === id) || levelsForCountry(country, systemId)[0];
+  const regionsForCountry = (country) => schoolCatalog.regionsForCountry ? schoolCatalog.regionsForCountry(country) : [];
+  const countryNeedsRegion = (country) => schoolCatalog.requiresRegion ? schoolCatalog.requiresRegion(country) : country === "CH";
+  const defaultRegionForCountry = (country) => countryById(country).defaultRegion || regionsForCountry(country)[0]?.id || "";
+  const gradeYearsForLevel = (level) => schoolCatalog.gradeYearsForLevel ? schoolCatalog.gradeYearsForLevel(level) : [{ id: "1", label: "1. Schuljahr" }, { id: "2", label: "2. Schuljahr" }, { id: "other", label: "Anderes" }];
+  const gradingScalesForCountrySystem = (country, systemId) => schoolCatalog.gradingScalesForCountrySystem ? schoolCatalog.gradingScalesForCountrySystem(country, systemId) : gradingScaleOptions;
+  const appGradeSystemForScale = (scaleId) => gradingScaleById(scaleId).appGradeSystem || defaultGradeSystemFor("CH");
   const defaultLevelForCountry = (country) => ({
-    CH: "gymi",
-    DE: "gymnasium",
-    AT: "ahs",
-    US: "high_school",
-    UK: "secondary",
-    OTHER: "high_school"
-  })[country] || "high_school";
+    CH: "secondary_II",
+    DE: "secondary_II",
+    AT: "secondary_II",
+    US: "secondary_II",
+    GB: "secondary_II",
+    UK: "secondary_II",
+    OTHER: "secondary_II"
+  })[country] || "secondary_II";
   const defaultGradeSystemFor = (country) => ({
     CH: "swiss_1_6",
     DE: "german_1_6",
     AT: "german_1_6",
     US: "us_gpa",
+    GB: "uk_general",
     UK: "uk_general"
   })[country] || "generic";
   const defaultLanguageStyleFor = (country) => ({
@@ -171,74 +168,124 @@
     DE: "de_standard",
     AT: "de_standard",
     US: "en_us",
+    GB: "en_uk",
     UK: "en_uk"
   })[country] || "simple";
-  const schoolDefaultsFor = (country = "CH", schoolLevel = "") => {
-    const level = schoolLevel || defaultLevelForCountry(country);
-    const gradingSystem = defaultGradeSystemFor(country);
+  const schoolDefaultsFor = (country = "CH", schoolLevel = "", educationSystemId = "", gradingScaleId = "") => {
+    const countryCode = countryById(country).id;
+    const systemId = educationSystemId || defaultEducationSystemForCountry(countryCode);
+    const level = schoolLevel || defaultLevelForEducationSystem(systemId) || defaultLevelForCountry(countryCode);
+    const scaleId = gradingScaleId || (schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(countryCode, systemId) : "");
+    const gradingSystem = appGradeSystemForScale(scaleId) || defaultGradeSystemFor(countryCode);
     const gradeMeta = gradeSystemBySchoolId(gradingSystem);
-    const plusPointsEnabled = country === "CH" && level === "gymi";
+    const plusPointsEnabled = countryCode === "CH" && systemId === "ch-gymnasium" && scaleId === "ch_1_to_6_high_is_good";
     return {
-      country,
-      countryLabel: countryById(country).label,
+      country: countryCode,
+      countryCode,
+      countryLabel: countryById(countryCode).label,
+      regionCode: defaultRegionForCountry(countryCode),
+      educationSystemId: systemId,
+      educationSystemLabel: educationSystemById(countryCode, systemId).label,
       schoolLevel: level,
-      schoolLevelLabel: levelById(country, level).label,
+      schoolLevelLabel: levelById(countryCode, level, systemId).label,
+      legacySchoolLevel: systemId === "ch-gymnasium" ? "gymi" : level,
+      gradeYear: "2",
       programme: "",
       mainGoal: "all",
+      primaryGoal: "exam_preparation",
       gradingSystem,
+      gradingScaleId: scaleId,
       plusPointsEnabled,
+      appLanguage: gradeMeta.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Zurich",
+      subjects: [],
+      customGradingScale: null,
       languageStyle: defaultLanguageStyleFor(country),
       gradeDisplayMode: plusPointsEnabled ? "average_pluspunkte" : (gradingSystem === "us_gpa" ? "gpa" : "average"),
       onboardingCompleted: false,
+      onboardingVersion: 2,
+      onboardingCompletedAt: "",
       appGradeSystem: gradeMeta.appId,
       language: gradeMeta.language
     };
   };
   const inferSchoolProfile = () => {
     const oldSystem = state.settings?.gradeSystem || state.user?.region || "ch";
-    const country = oldSystem === "us" ? "US" : oldSystem === "de" ? "DE" : oldSystem === "uk" ? "UK" : oldSystem === "at" ? "AT" : "CH";
+    const country = oldSystem === "us" ? "US" : oldSystem === "de" ? "DE" : oldSystem === "uk" ? "GB" : oldSystem === "at" ? "AT" : "CH";
     const defaults = schoolDefaultsFor(country, defaultLevelForCountry(country));
     return { ...defaults, onboardingCompleted: Boolean(state.user?.loggedIn) };
   };
   const normalizeSchoolProfile = (profile = {}) => {
-    const base = profile?.country ? schoolDefaultsFor(profile.country, profile.schoolLevel || defaultLevelForCountry(profile.country)) : inferSchoolProfile();
-    const country = countryById(profile.country || base.country).id;
-    const level = levelById(country, profile.schoolLevel || base.schoolLevel).id;
-    const defaults = schoolDefaultsFor(country, level);
-    const gradingSystem = schoolGradeSystems.some((system) => system.id === profile.gradingSystem) ? profile.gradingSystem : defaults.gradingSystem;
+    const rawCountry = profile.countryCode || profile.country || "";
+    const base = rawCountry ? schoolDefaultsFor(rawCountry, profile.schoolLevel || "", profile.educationSystemId || "", profile.gradingScaleId || "") : inferSchoolProfile();
+    const country = countryById(rawCountry || base.country).id;
+    const educationSystemId = educationSystemById(country, profile.educationSystemId || base.educationSystemId || defaultEducationSystemForCountry(country)).id;
+    const oldLevel = profile.schoolLevel === "gymi" ? "secondary_II" : profile.schoolLevel;
+    const level = levelById(country, oldLevel || base.schoolLevel || defaultLevelForEducationSystem(educationSystemId), educationSystemId).id;
+    const scaleId = gradingScaleById(profile.gradingScaleId || base.gradingScaleId || (schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(country, educationSystemId) : "")).id;
+    const defaults = schoolDefaultsFor(country, level, educationSystemId, scaleId);
+    const gradingSystem = schoolGradeSystems.some((system) => system.id === profile.gradingSystem) ? profile.gradingSystem : appGradeSystemForScale(scaleId) || defaults.gradingSystem;
     const gradeMeta = gradeSystemBySchoolId(gradingSystem);
-    const plusAvailable = country === "CH" && level === "gymi";
+    const plusAvailable = country === "CH" && educationSystemId === "ch-gymnasium" && scaleId === "ch_1_to_6_high_is_good";
     return {
       ...defaults,
       ...profile,
       country,
+      countryCode: country,
       countryLabel: countryById(country).label,
+      regionCode: countryNeedsRegion(country) ? (profile.regionCode || defaults.regionCode || defaultRegionForCountry(country)) : "",
+      educationSystemId,
+      educationSystemLabel: educationSystemById(country, educationSystemId).label,
       schoolLevel: level,
-      schoolLevelLabel: levelById(country, level).label,
+      schoolLevelLabel: levelById(country, level, educationSystemId).label,
+      legacySchoolLevel: profile.legacySchoolLevel || (educationSystemId === "ch-gymnasium" ? "gymi" : level),
+      gradeYear: profile.gradeYear || defaults.gradeYear || "2",
       gradingSystem,
+      gradingScaleId: scaleId,
+      customGradingScale: scaleId === "custom" && profile.customGradingScale ? { ...profile.customGradingScale } : null,
       plusPointsEnabled: plusAvailable && profile.plusPointsEnabled !== false,
+      appLanguage: profile.appLanguage || gradeMeta.language,
+      timezone: profile.timezone || defaults.timezone,
+      subjects: Array.isArray(profile.subjects) ? profile.subjects : [],
+      primaryGoal: profile.primaryGoal || defaults.primaryGoal,
       languageStyle: profile.languageStyle || defaults.languageStyle,
       gradeDisplayMode: profile.gradeDisplayMode || (plusAvailable ? "average_pluspunkte" : gradingSystem === "us_gpa" ? "gpa" : "average"),
       onboardingCompleted: Boolean(profile.onboardingCompleted),
+      onboardingVersion: Number(profile.onboardingVersion || 2),
+      onboardingCompletedAt: profile.onboardingCompletedAt || profile.completedAt || "",
       appGradeSystem: gradeMeta.appId,
-      language: gradeMeta.language
+      language: profile.appLanguage || gradeMeta.language
     };
   };
   const buildSchoolProfile = (data = {}, existing = {}, completed = true) => {
-    const country = countryById(data.country || existing.country || "CH").id;
-    const level = levelById(country, data.schoolLevel || existing.schoolLevel || defaultLevelForCountry(country)).id;
-    const defaults = schoolDefaultsFor(country, level);
-    const plusAvailable = country === "CH" && level === "gymi";
+    const country = countryById(data.countryCode || data.country || existing.countryCode || existing.country || "CH").id;
+    const educationSystemId = educationSystemById(country, data.educationSystemId || existing.educationSystemId || defaultEducationSystemForCountry(country)).id;
+    const level = levelById(country, data.schoolLevel || existing.schoolLevel || defaultLevelForEducationSystem(educationSystemId), educationSystemId).id;
+    const scaleId = gradingScaleById(data.gradingScaleId || existing.gradingScaleId || (schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(country, educationSystemId) : "")).id;
+    const defaults = schoolDefaultsFor(country, level, educationSystemId, scaleId);
+    const plusAvailable = country === "CH" && educationSystemId === "ch-gymnasium" && scaleId === "ch_1_to_6_high_is_good";
     return normalizeSchoolProfile({
       ...defaults,
       ...existing,
       country,
+      countryCode: country,
+      regionCode: countryNeedsRegion(country) ? (data.regionCode || existing.regionCode || defaults.regionCode) : "",
+      educationSystemId,
       schoolLevel: level,
+      gradeYear: data.gradeYear || existing.gradeYear || defaults.gradeYear,
       mainGoal: data.mainGoal || existing.mainGoal || "all",
-      gradingSystem: data.gradingSystem || defaults.gradingSystem,
+      primaryGoal: data.primaryGoal || existing.primaryGoal || defaults.primaryGoal,
+      subjects: Array.isArray(data.subjects) ? data.subjects : Array.isArray(existing.subjects) ? existing.subjects : [],
+      gradingSystem: data.gradingSystem || appGradeSystemForScale(scaleId) || defaults.gradingSystem,
+      gradingScaleId: scaleId,
+      customGradingScale: scaleId === "custom" && data.customGradingScale ? { ...data.customGradingScale } : (scaleId === "custom" && existing.customGradingScale ? { ...existing.customGradingScale } : null),
       plusPointsEnabled: plusAvailable && (data.plusPointsEnabled === "on" || data.plusPointsEnabled === true || existing.plusPointsEnabled === true),
       languageStyle: data.languageStyle || existing.languageStyle || defaults.languageStyle,
-      onboardingCompleted: completed
+      appLanguage: data.appLanguage || existing.appLanguage || defaults.appLanguage,
+      timezone: data.timezone || existing.timezone || defaults.timezone,
+      onboardingVersion: 2,
+      onboardingCompleted: completed,
+      onboardingCompletedAt: completed ? (existing.onboardingCompletedAt || new Date().toISOString()) : ""
     });
   };
   const schoolProfile = () => state.schoolProfile || normalizeSchoolProfile();
@@ -246,7 +293,7 @@
   const isSwissProfile = () => schoolProfile().country === "CH";
   const isGermanProfile = () => ["CH", "DE", "AT"].includes(schoolProfile().country);
   const isUsProfile = () => schoolProfile().country === "US";
-  const isSwissGymiProfile = () => isSwissProfile() && schoolProfile().schoolLevel === "gymi";
+  const isSwissGymiProfile = () => isSwissProfile() && (schoolProfile().educationSystemId === "ch-gymnasium" || schoolProfile().legacySchoolLevel === "gymi");
   const shouldShowPluspunkte = () => isSwissGymiProfile() && schoolProfile().plusPointsEnabled === true;
   const schoolLabels = () => {
     const profile = schoolProfile();
@@ -283,7 +330,7 @@
         pointsTitle: "Plus points"
       };
     }
-    if (profile.country === "UK") {
+    if (profile.country === "GB" || profile.country === "UK") {
       return {
         greeting: "Hi",
         subtitle: "Small steps, big progress.",
@@ -538,6 +585,26 @@
       console.warn("Entitlements konnten nicht synchronisiert werden.", error);
       return currentEntitlement();
     }
+  };
+  const logoutCurrentUser = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: entitlementHeaders({ "Content-Type": "application/json" }),
+        credentials: "same-origin"
+      });
+    } catch (error) {
+      console.warn("Server-Logout konnte nicht bestätigt werden.", error);
+    }
+    ensureCollections();
+    state.user.loggedIn = false;
+    state.ui.selectedGradeSubject = null;
+    state.ui.selectedPartialGroup = null;
+    state.ui.cardCreateOpen = false;
+    state.ui.materialSheetOpen = false;
+    save();
+    location.hash = "#dashboard";
+    render();
   };
   const defaultWeeklyStats = () => ({
     weekKey: weekKey(),
@@ -992,7 +1059,10 @@
     state.settings.reminderPreferences = { ...window.StudyUpSeed.settings.reminderPreferences, ...(savedSettings.reminderPreferences || {}) };
     if (!savedSettings.theme || savedSettings.theme === "system") state.settings.theme = "dark";
     state.onboarding = { ...(window.StudyUpSeed.onboarding || {}), ...(state.onboarding || {}) };
-    state.onboarding.onboardingStep = Math.max(0, Math.min(6, Number(state.onboarding.onboardingStep || 0)));
+    state.onboarding.onboardingVersion = Number(state.onboarding.onboardingVersion || 2);
+    state.onboarding.validationMessage = state.onboarding.validationMessage || "";
+    state.onboarding.accountMethod = state.onboarding.accountMethod || "";
+    state.onboarding.onboardingStep = Math.max(0, Math.min(7, Number(state.onboarding.onboardingStep || 0)));
     state.onboarding.selectedGoal = state.onboarding.selectedGoal || state.onboarding.goal || "";
     state.onboarding.selectedSubject = state.onboarding.selectedSubject || "";
     state.onboarding.targetDate = state.onboarding.targetDate || "";
@@ -1045,7 +1115,7 @@
       system.id === "ch" ? { ...system, step: 0.01, example: "5.75" } : system
     ));
     state.languages = state.languages?.length ? state.languages : copy(window.StudyUpSeed.languages);
-    state.schoolProfile = normalizeSchoolProfile(state.schoolProfile?.country ? state.schoolProfile : inferSchoolProfile());
+    state.schoolProfile = normalizeSchoolProfile((state.schoolProfile?.country || state.schoolProfile?.countryCode) ? state.schoolProfile : inferSchoolProfile());
     state.settings.gradeSystem = state.schoolProfile.appGradeSystem || state.settings.gradeSystem;
     state.settings.language = state.schoolProfile.language || state.settings.language;
     state.notifications = (state.notifications || []).map((note) => ({
@@ -1338,7 +1408,7 @@
 
   const plusPointsFor = (subject) => subjectHasGrades(subject) ? plusPointsForAverage(subjectDisplayAverage(subject)) * Number(subject.weight || 1) : 0;
   const calculatePluspunkte = (subjects = state.subjects, settings = schoolProfile()) => {
-    const enabled = settings.country === "CH" && settings.schoolLevel === "gymi" && settings.plusPointsEnabled === true;
+    const enabled = settings.country === "CH" && (settings.educationSystemId === "ch-gymnasium" || settings.legacySchoolLevel === "gymi") && settings.plusPointsEnabled === true;
     const gradedSubjects = (subjects || []).filter(subjectHasGrades);
     if (!enabled) return { available: false, value: null, subjects: gradedSubjects.length, reason: "Pluspunkte sind nur für Schweizer Gymi-Profile aktiviert." };
     if (!gradedSubjects.length) return { available: true, value: null, subjects: 0, reason: "Füge deine Promotionsfächer hinzu." };
@@ -1365,7 +1435,7 @@
     state.settings.gradeSystem = state.settings.gradeSystem || "ch";
     state.settings.language = state.settings.language || "de-CH";
     state.schoolProfile = normalizeSchoolProfile({
-      ...schoolDefaultsFor("CH", "gymi"),
+      ...schoolDefaultsFor("CH", "secondary_II", "ch-gymnasium", "ch_1_to_6_high_is_good"),
       onboardingCompleted: true
     });
     state.subjects = [
@@ -1410,6 +1480,29 @@
     state.ui.studySessionCardIndex = 0;
   };
 
+  const onboardingActive = () => !state.user.loggedIn || state.schoolProfile?.onboardingCompleted !== true;
+
+  const applyOnboardingNavigationState = () => {
+    const active = onboardingActive();
+    document.body.classList.toggle("is-onboarding", active);
+    if (!bottomNav) return;
+
+    bottomNav.hidden = active;
+    bottomNav.inert = active;
+    bottomNav.setAttribute("aria-hidden", String(active));
+    bottomNav.querySelectorAll("a, button, input, select, textarea, [tabindex]").forEach((item) => {
+      if (active) {
+        if (!item.dataset.previousTabIndex) item.dataset.previousTabIndex = item.getAttribute("tabindex") ?? "";
+        item.setAttribute("tabindex", "-1");
+      } else {
+        const previous = item.dataset.previousTabIndex;
+        if (previous === "") item.removeAttribute("tabindex");
+        else if (typeof previous === "string") item.setAttribute("tabindex", previous);
+        delete item.dataset.previousTabIndex;
+      }
+    });
+  };
+
   const applyTheme = () => {
     const system = currentSystem();
     document.title = "Lynxly";
@@ -1418,6 +1511,7 @@
     document.documentElement.dataset.reducedMotion = state.settings.reducedAnimations ? "true" : "false";
     document.documentElement.lang = state.settings.language || system.language;
     document.body.classList.toggle("is-locked", !state.user.loggedIn);
+    applyOnboardingNavigationState();
     const accent = accentColors[state.settings.accent] || accentColors.blue;
     document.documentElement.style.setProperty("--accent", accent);
     document.documentElement.style.setProperty("--accent-soft", `${accent}1A`);
@@ -1480,7 +1574,7 @@
     render();
   };
 
-  const renderLevelOptions = (country, selected = "") => levelsForCountry(country).map((level) => (
+  const renderLevelOptions = (country, selected = "", educationSystemId = "") => levelsForCountry(country, educationSystemId).map((level) => (
     `<option value="${level.id}" ${level.id === selected ? "selected" : ""}>${C.escapeHtml(level.label)}</option>`
   )).join("");
 
@@ -1539,11 +1633,30 @@
     }
     return state.onboarding.generatedPreview;
   };
+  const onboardingStepTotal = 8;
+  const onboardingDraft = () => normalizeSchoolProfile(schoolProfile());
+  const onboardingAuthAvailable = () => ({
+    google: Boolean(window.LYNXLY_GOOGLE_CLIENT_ID && window.google?.accounts?.id),
+    apple: Boolean(window.LYNXLY_APPLE_CLIENT_ID && window.AppleID?.auth),
+    email: false
+  });
   const renderOnboardingStepDots = (active) => `
     <div class="onboarding-step-dots" aria-label="Onboarding Fortschritt">
-      ${[0, 1, 2, 3, 4].map((step) => `<i class="${step <= active ? "active" : ""}"></i>`).join("")}
+      ${Array.from({ length: onboardingStepTotal }, (_, step) => `<i class="${step <= active ? "active" : ""}"></i>`).join("")}
     </div>
   `;
+  const renderOnboardingMessage = () => state.onboarding.validationMessage
+    ? `<p class="onboarding-status error" role="alert">${C.escapeHtml(state.onboarding.validationMessage)}</p>`
+    : "";
+  const renderCountryOptions = (selected = "CH") => countryOptions.map((country) => `<option value="${country.id}" ${country.id === normalizeCountryId(selected) ? "selected" : ""}>${C.escapeHtml(country.label)}</option>`).join("");
+  const renderCountryDatalistOptions = () => countryOptions.map((country) => `<option value="${country.id}">${C.escapeHtml(country.label)}</option>`).join("");
+  const renderRegionOptions = (country = "CH", selected = "") => regionsForCountry(country).map((region) => `<option value="${region.id}" ${region.id === selected ? "selected" : ""}>${C.escapeHtml(region.label)}</option>`).join("");
+  const renderEducationSystemOptions = (country = "CH", selected = "") => educationSystemsForCountry(country).map((system) => `<option value="${system.id}" ${system.id === selected ? "selected" : ""}>${C.escapeHtml(system.label)}</option>`).join("");
+  const renderGradingScaleOptions = (country = "CH", systemId = "", selected = "") => gradingScalesForCountrySystem(country, systemId).map((scale) => `<option value="${scale.id}" ${scale.id === selected ? "selected" : ""}>${C.escapeHtml(scale.label)}</option>`).join("");
+  const renderGradeYearOptions = (level = "secondary_II", selected = "2") => gradeYearsForLevel(level).map((year) => `<option value="${year.id}" ${year.id === selected ? "selected" : ""}>${C.escapeHtml(year.label)}</option>`).join("");
+  const gradingScaleExample = (scaleId) => gradingScaleById(scaleId).example || "Beispiel wird nach der Auswahl angezeigt.";
+  const authButtonState = (method) => onboardingAuthAvailable()[method] ? "" : "disabled";
+  const authButtonSuffix = (method) => onboardingAuthAvailable()[method] ? "" : `<small>Bald verfügbar</small>`;
   const renderOnboardingFrame = (content, step = 0) => `
     <section class="onboarding-screen value-onboarding">
       <div class="onboarding-glow" aria-hidden="true"></div>
@@ -1558,33 +1671,38 @@
     </section>
   `;
   const renderOnboarding = (schoolOnly = false) => {
-    if (schoolOnly) state.onboarding.onboardingStep = Math.max(0, Number(state.onboarding.onboardingStep || 0));
-    const step = Math.max(0, Math.min(5, Number(state.onboarding.onboardingStep || 0)));
+    const profile = onboardingDraft();
+    const step = Math.max(schoolOnly ? 1 : 0, Math.min(onboardingStepTotal - 1, Number(state.onboarding.onboardingStep || 0)));
     if (step === 1) {
+      const suggested = schoolCatalog.suggestCountryFromLocale?.(navigator.language || "", Intl.DateTimeFormat().resolvedOptions().timeZone || "") || profile.countryCode || "CH";
       return renderOnboardingFrame(`
-        <form class="value-onboarding-card" id="onboarding-goal-form">
-          <span class="onboarding-kicker">1 Minute Setup</span>
-          <h1>Was willst du verbessern?</h1>
-          <div class="onboarding-choice-grid">
-            ${onboardingGoals.map((goal) => `
-              <label class="onboarding-choice ${state.onboarding.selectedGoal === goal.id ? "selected" : ""}">
-                <input name="selectedGoal" type="radio" value="${goal.id}" ${state.onboarding.selectedGoal === goal.id ? "checked" : ""} />
-                <strong>${C.escapeHtml(goal.title)}</strong>
-                <small>${C.escapeHtml(goal.text)}</small>
-              </label>
-            `).join("")}
-          </div>
-          <button class="primary-button" type="submit">Weiter</button>
+        <form class="value-onboarding-card" id="onboarding-country-form">
+          <span class="onboarding-kicker">Schritt 1</span>
+          <h1>Wo gehst du zur Schule?</h1>
+          <p>Damit kann Lynxly Noten, Schulstufen und Prüfungsplanung richtig einstellen.</p>
+          ${renderOnboardingMessage()}
+          <label>Land suchen oder Ländercode eingeben
+            <input name="countryCode" list="onboarding-country-list" required value="${C.escapeHtml(profile.countryCode || suggested)}" autocomplete="country" aria-label="Land auswählen" />
+            <datalist id="onboarding-country-list">${renderCountryDatalistOptions()}</datalist>
+          </label>
+          <p class="panel-note">Vorschlag: ${C.escapeHtml(countryById(suggested).label)}. Lynxly fragt nicht nach deinem Standort.</p>
+          <button class="primary-button" type="submit">Land bestätigen</button>
+          ${schoolOnly ? "" : `<button class="text-button onboarding-back" data-step="0" type="button">Zurück</button>`}
         </form>
       `, 1);
     }
     if (step === 2) {
       return renderOnboardingFrame(`
-        <form class="value-onboarding-card" id="onboarding-subject-form">
-          <span class="onboarding-kicker">${C.escapeHtml(onboardingGoalTitle(state.onboarding.selectedGoal))}</span>
-          <h1>Womit starten wir?</h1>
-          <label>Fach<input name="selectedSubject" required value="${C.escapeHtml(state.onboarding.selectedSubject || "")}" placeholder="Mathe" /></label>
-          <label>Nächste Prüfung <small>optional</small><input name="targetDate" type="date" value="${C.escapeHtml(state.onboarding.targetDate || "")}" /></label>
+        <form class="value-onboarding-card" id="onboarding-region-form">
+          <span class="onboarding-kicker">${C.escapeHtml(profile.countryLabel)}</span>
+          <h1>Welcher Kanton?</h1>
+          <p>In der Schweiz unterscheiden sich Schulwege je nach Kanton.</p>
+          ${renderOnboardingMessage()}
+          <label>Kanton
+            <select name="regionCode" required aria-label="Kanton auswählen">
+              ${renderRegionOptions(profile.countryCode, profile.regionCode || defaultRegionForCountry(profile.countryCode))}
+            </select>
+          </label>
           <button class="primary-button" type="submit">Weiter</button>
           <button class="text-button onboarding-back" data-step="1" type="button">Zurück</button>
         </form>
@@ -1592,77 +1710,145 @@
     }
     if (step === 3) {
       return renderOnboardingFrame(`
-        <form class="value-onboarding-card notes-onboarding-card" id="onboarding-notes-form">
-          <span class="onboarding-kicker">${C.escapeHtml(onboardingSubject())}</span>
-          <h1>Lade deine Notizen hoch</h1>
-          <p>PDF, Foto, Screenshot oder Text — Lynxly macht daraus Karten, Quiz und einen Tagesplan.</p>
-          <label class="onboarding-upload-tile">${C.icon("upload")} Datei auswählen
-            <input name="notesFile" type="file" accept=".txt,.md,.pdf,image/*" />
+        <form class="value-onboarding-card" id="onboarding-system-form">
+          <span class="onboarding-kicker">${C.escapeHtml(profile.countryLabel)}</span>
+          <h1>Welches Schulsystem nutzt du?</h1>
+          <p>Wähle das System, das wirklich zu deiner Schule passt. International ist auch möglich.</p>
+          ${renderOnboardingMessage()}
+          <label>Schulsystem
+            <select name="educationSystemId" required aria-label="Schulsystem auswählen">
+              ${renderEducationSystemOptions(profile.countryCode, profile.educationSystemId)}
+            </select>
           </label>
-          <label>Text einfügen<textarea name="uploadedNotesText" rows="7" placeholder="Füge hier deine Notizen ein...">${C.escapeHtml(state.onboarding.uploadedNotesText || "")}</textarea></label>
-          ${state.onboarding.uploadStatus ? `<p class="onboarding-status">${C.escapeHtml(state.onboarding.uploadStatus)}</p>` : ""}
-          <div class="onboarding-create-list">
-            <span>Study Cards</span><span>Mini-Quiz</span><span>Zusammenfassung</span><span>Tagesplan</span>
-          </div>
-          <button class="primary-button" type="submit">Preview erstellen</button>
-          <button class="secondary-button onboarding-manual-preview" type="button">Manuell starten</button>
+          <button class="primary-button" type="submit">Schulsystem bestätigen</button>
+          <button class="text-button onboarding-back" data-step="${countryNeedsRegion(profile.countryCode) ? 2 : 1}" type="button">Zurück</button>
         </form>
       `, 3);
     }
     if (step === 4) {
-      const preview = ensureOnboardingPreview();
       return renderOnboardingFrame(`
-        <section class="value-onboarding-card preview-onboarding-card">
-          <span class="onboarding-kicker">Gefunden</span>
-          <h1>${C.escapeHtml(preview.subject || onboardingSubject())}</h1>
-          <div class="preview-metric-grid">
-            <article><strong>${Number(preview.cards || 0)}</strong><span>Study Cards</span></article>
-            <article><strong>${Number(preview.quiz || 0)}</strong><span>Quizfragen</span></article>
-            <article><strong>${Number(preview.topics || 0)}</strong><span>Fokus-Themen</span></article>
-            <article><strong>${Number(preview.minutes || 5)}</strong><span>Minuten Plan</span></article>
-          </div>
-          <p class="onboarding-status">Demo/Offline Preview: Alles wird lokal vorbereitet. Du kannst es speichern oder ohne Account testen.</p>
-          <button class="primary-button onboarding-save-start" type="button">Speichern und erste Runde starten</button>
-          <button class="secondary-button onboarding-guest-start" type="button">Ohne Account testen</button>
-          <button class="text-button onboarding-back" data-step="3" type="button">Notizen ändern</button>
-        </section>
+        <form class="value-onboarding-card" id="onboarding-level-form">
+          <span class="onboarding-kicker">${C.escapeHtml(profile.educationSystemLabel)}</span>
+          <h1>Welche Schulstufe besuchst du?</h1>
+          ${renderOnboardingMessage()}
+          <label>Schulstufe
+            <select name="schoolLevel" id="onboarding-school-level" required aria-label="Schulstufe auswählen">
+              ${renderLevelOptions(profile.countryCode, profile.schoolLevel, profile.educationSystemId)}
+            </select>
+          </label>
+          <label>Schuljahr
+            <select name="gradeYear" required aria-label="Schuljahr auswählen">
+              ${renderGradeYearOptions(profile.schoolLevel, profile.gradeYear)}
+            </select>
+          </label>
+          <button class="primary-button" type="submit">Weiter</button>
+          <button class="text-button onboarding-back" data-step="3" type="button">Zurück</button>
+        </form>
       `, 4);
     }
     if (step === 5) {
+      const scale = gradingScaleById(profile.gradingScaleId);
       return renderOnboardingFrame(`
-        <section class="value-onboarding-card sign-in-value-card">
-          <span class="onboarding-kicker">Study Set speichern</span>
-          <h1>Deine erste Lernrunde ist bereit.</h1>
-          <p>Lynxly hat Karten, Quiz und einen kleinen Plan vorbereitet. Erstelle einen kostenlosen lokalen Demo-Account, damit Karten, Fortschritt, Noten und Pläne in diesem Browser gespeichert bleiben.</p>
-          <div class="auth-choice-list">
-            <button class="secondary-button onboarding-auth-choice" data-method="apple" type="button">Continue with Apple <small>Demo lokal</small></button>
-            <button class="secondary-button onboarding-auth-choice" data-method="google" type="button">Continue with Google <small>Demo lokal</small></button>
-            <button class="primary-button onboarding-auth-choice" data-method="email" type="button">Continue with Email <small>Demo lokal</small></button>
+        <form class="value-onboarding-card" id="onboarding-grading-form">
+          <span class="onboarding-kicker">${C.escapeHtml(profile.schoolLevelLabel)}</span>
+          <h1>Welches Notensystem verwendet deine Schule?</h1>
+          <p>Lynxly empfiehlt eine Skala, aber du bestätigst sie selbst.</p>
+          ${renderOnboardingMessage()}
+          <label>Notensystem
+            <select name="gradingScaleId" id="onboarding-grading-scale" required aria-label="Notensystem auswählen">
+              ${renderGradingScaleOptions(profile.countryCode, profile.educationSystemId, profile.gradingScaleId)}
+            </select>
+          </label>
+          <p class="onboarding-status" data-scale-example>${C.escapeHtml(gradingScaleExample(scale.id))}</p>
+          <div class="custom-scale-fields">
+            <label>Minimum<input name="customMin" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.min ?? scale.min ?? 0)}" /></label>
+            <label>Maximum<input name="customMax" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.max ?? scale.max ?? 100)}" /></label>
+            <label>Genügend ab<input name="customPassingThreshold" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.passingThreshold ?? scale.passingThreshold ?? 60)}" /></label>
+            <label>Beste Note
+              <select name="customHigherIsBetter">
+                <option value="true" ${(profile.customGradingScale?.higherIsBetter ?? scale.higherIsBetter) ? "selected" : ""}>Hoher Wert</option>
+                <option value="false" ${(profile.customGradingScale?.higherIsBetter ?? scale.higherIsBetter) ? "" : "selected"}>Tiefer Wert</option>
+              </select>
+            </label>
+            <label>Dezimalstellen<input name="customDecimalPrecision" type="number" min="0" max="3" step="1" value="${C.escapeHtml(profile.customGradingScale?.decimalPrecision ?? scale.decimalPrecision ?? 1)}" /></label>
           </div>
-          <button class="text-button onboarding-guest-start" type="button">Ohne Account testen</button>
-        </section>
-      `, 4);
+          <button class="primary-button" type="submit">Notensystem bestätigen</button>
+          <button class="text-button onboarding-back" data-step="4" type="button">Zurück</button>
+        </form>
+      `, 5);
     }
-    return `
-      ${renderOnboardingFrame(`
-        <section class="value-onboarding-card promise-card">
-          ${C.mascot("mascot-floating")}
-          <span class="onboarding-kicker">Lynxly</span>
-          <h1>Aus deinen Notizen wird ein Lernplan.</h1>
-          <div class="value-pill-grid">
-            <span>Study Cards</span>
-            <span>Mini-Quiz</span>
-            <span>Fehleranalyse</span>
-            <span>Noten-Fokus</span>
+    if (step === 6) {
+      const selected = new Set(profile.subjects || []);
+      return renderOnboardingFrame(`
+        <form class="value-onboarding-card" id="onboarding-subjects-form">
+          <span class="onboarding-kicker">Optional</span>
+          <h1>Welche Fächer möchtest du verbessern?</h1>
+          <p>Du kannst diesen Schritt überspringen und später im Profil ändern.</p>
+          ${renderOnboardingMessage()}
+          <div class="onboarding-choice-grid compact">
+            ${subjectSuggestionOptions.map((subject) => `
+              <label class="onboarding-choice ${selected.has(subject.id) ? "selected" : ""}">
+                <input name="subjects" type="checkbox" value="${subject.id}" ${selected.has(subject.id) ? "checked" : ""} />
+                <strong>${C.escapeHtml(subject.label)}</strong>
+              </label>
+            `).join("")}
           </div>
-          <button class="primary-button onboarding-start" type="button">Loslegen</button>
-          <div class="onboarding-actions compact">
-            <button class="secondary-button onboarding-demo" type="button">Demo ansehen</button>
-            <button class="text-button onboarding-later" type="button">Später starten</button>
+          <label>Eigenes Fach <input name="customSubject" value="" aria-label="Eigenes Fach hinzufügen" /></label>
+          <label>Wichtigstes Ziel
+            <select name="primaryGoal" aria-label="Wichtigstes Ziel auswählen">
+              ${mainGoalOptions.map((goal) => `<option value="${goal.id}" ${goal.id === profile.primaryGoal ? "selected" : ""}>${C.escapeHtml(goal.label)}</option>`).join("")}
+            </select>
+          </label>
+          <button class="primary-button" type="submit">Weiter</button>
+          <button class="secondary-button onboarding-skip-subjects" type="button">Überspringen</button>
+          <button class="text-button onboarding-back" data-step="5" type="button">Zurück</button>
+        </form>
+      `, 6);
+    }
+    if (step === 7) {
+      const actions = [
+        { id: "exam", title: "Prüfung hinzufügen", text: "Damit Lynxly deinen Fokus planen kann." },
+        { id: "cards", title: "Lernkarten erstellen", text: "Starte mit einem kleinen Study Set." },
+        { id: "grades", title: "Noten eintragen", text: "Berechne Schnitt und Pluspunkte." },
+        { id: "material", title: "Material hochladen", text: "PDF, Notizen oder Text vorbereiten." },
+        { id: "ask", title: "Lynxly fragen", text: "Stelle direkt eine Lernfrage." }
+      ];
+      return renderOnboardingFrame(`
+        <form class="value-onboarding-card" id="onboarding-first-action-form">
+          <span class="onboarding-kicker">Start</span>
+          <h1>Was möchtest du zuerst machen?</h1>
+          <p>Du landest danach direkt im passenden Bereich statt auf einem leeren Dashboard.</p>
+          ${renderOnboardingMessage()}
+          <div class="onboarding-choice-grid">
+            ${actions.map((action, index) => `
+              <label class="onboarding-choice ${state.onboarding.firstAction === action.id ? "selected" : ""}">
+                <input name="firstAction" type="radio" value="${action.id}" ${state.onboarding.firstAction === action.id || (!state.onboarding.firstAction && index === 0) ? "checked" : ""} />
+                <strong>${C.escapeHtml(action.title)}</strong>
+                <small>${C.escapeHtml(action.text)}</small>
+              </label>
+            `).join("")}
           </div>
-        </section>
-      `, 0)}
-    `;
+          <button class="primary-button" type="submit">Lynxly starten</button>
+          <button class="text-button onboarding-back" data-step="6" type="button">Zurück</button>
+        </form>
+      `, 7);
+    }
+    return renderOnboardingFrame(`
+      <section class="value-onboarding-card promise-card">
+        ${C.mascot("mascot-floating")}
+        <span class="onboarding-kicker">Lynxly</span>
+        <h1>Willkommen bei Lynxly</h1>
+        <p>Richte dein Land, Schulsystem und Notensystem ein. Du kannst anonym starten und dich später registrieren, ohne deine lokalen Daten zu verlieren.</p>
+        ${renderOnboardingMessage()}
+        <div class="auth-choice-list">
+          <button class="secondary-button onboarding-auth-choice" data-method="google" type="button" ${authButtonState("google")}>Mit Google fortfahren ${authButtonSuffix("google")}</button>
+          <button class="secondary-button onboarding-auth-choice" data-method="apple" type="button" ${authButtonState("apple")}>Mit Apple fortfahren ${authButtonSuffix("apple")}</button>
+          <button class="secondary-button onboarding-auth-choice" data-method="email" type="button" ${authButtonState("email")}>Mit E-Mail fortfahren ${authButtonSuffix("email")}</button>
+        </div>
+        <button class="primary-button onboarding-guest-start" type="button">Ohne Konto testen</button>
+        <button class="text-button onboarding-demo" type="button">Demo-Daten ausprobieren</button>
+      </section>
+    `, 0);
   };
 
   const createOnboardingPlannerData = (materials) => {
@@ -1719,7 +1905,8 @@
     state.todaysFocus = { ...window.StudyUpSeed.todaysFocus, version: 0, date: "" };
     return materials;
   };
-  const signInOnboardingUser = (mode = "guest") => {
+  const signInOnboardingUser = (mode = "guest", options = {}) => {
+    const completeSchoolProfile = options.completeSchoolProfile !== false;
     const subject = onboardingSubject();
     state.user = {
       ...state.user,
@@ -1727,15 +1914,18 @@
       name: state.user.name || (mode === "guest" ? "Gast" : "Lynxly Nutzer"),
       email: state.user.email || "",
       password: "",
-      authMode: mode === "guest" ? "guest-local" : `demo-${mode}`,
+      authMode: mode === "guest" ? "guest-local" : mode,
       region: state.settings.gradeSystem
     };
+    state.onboarding.accountMethod = mode;
     state.onboarding.guestMode = mode === "guest";
     state.onboarding.signInSkipped = mode === "guest";
-    state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: true });
+    if (completeSchoolProfile) {
+      state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: true, onboardingCompletedAt: schoolProfile().onboardingCompletedAt || new Date().toISOString() });
+    }
     state.settings.theme = state.settings.theme || "dark";
     state.settings.dailyGoalMinutes = state.settings.dailyGoalMinutes || 5;
-    state.onboarding.completedAt = state.onboarding.completedAt || new Date().toISOString();
+    if (completeSchoolProfile) state.onboarding.completedAt = state.onboarding.completedAt || new Date().toISOString();
     state.onboarding.firstAction = "review";
     if (!state.onboarding.selectedSubject) state.onboarding.selectedSubject = subject;
   };
@@ -1751,19 +1941,37 @@
     render();
   };
 
-  const bindSchoolLevelSync = (countrySelector, levelSelector) => {
+  const bindSchoolLevelSync = (countrySelector, levelSelector, systemSelector = "", scaleSelector = "", regionSelector = "") => {
     const countrySelect = document.querySelector(countrySelector);
     const levelSelect = document.querySelector(levelSelector);
     if (!countrySelect || !levelSelect) return;
-    countrySelect.addEventListener("change", () => {
+    const systemSelect = systemSelector ? document.querySelector(systemSelector) : null;
+    const scaleSelect = scaleSelector ? document.querySelector(scaleSelector) : null;
+    const regionSelect = regionSelector ? document.querySelector(regionSelector) : null;
+    const updateForCountry = () => {
       const country = countrySelect.value || "OTHER";
-      const selected = defaultLevelForCountry(country);
-      levelSelect.innerHTML = renderLevelOptions(country, selected);
+      const systemId = defaultEducationSystemForCountry(country);
+      if (systemSelect) systemSelect.innerHTML = renderEducationSystemOptions(country, systemId);
+      if (regionSelect) {
+        regionSelect.innerHTML = renderRegionOptions(country, defaultRegionForCountry(country));
+        regionSelect.closest("label")?.classList.toggle("is-hidden", !countryNeedsRegion(country));
+      }
+      const selected = defaultLevelForEducationSystem(systemId) || defaultLevelForCountry(country);
+      levelSelect.innerHTML = renderLevelOptions(country, selected, systemId);
+      if (scaleSelect) scaleSelect.innerHTML = renderGradingScaleOptions(country, systemId, schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(country, systemId) : "");
       const form = countrySelect.closest("form");
       const gradeSelect = form?.querySelector('select[name="gradingSystem"]');
       const languageStyle = form?.querySelector('select[name="languageStyle"]');
       if (gradeSelect) gradeSelect.value = defaultGradeSystemFor(country);
       if (languageStyle) languageStyle.value = defaultLanguageStyleFor(country);
+    };
+    countrySelect.addEventListener("change", updateForCountry);
+    systemSelect?.addEventListener("change", () => {
+      const country = countrySelect.value || "OTHER";
+      const systemId = systemSelect.value || defaultEducationSystemForCountry(country);
+      const selected = defaultLevelForEducationSystem(systemId) || defaultLevelForCountry(country);
+      levelSelect.innerHTML = renderLevelOptions(country, selected, systemId);
+      if (scaleSelect) scaleSelect.innerHTML = renderGradingScaleOptions(country, systemId, schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(country, systemId) : "");
     });
   };
 
@@ -6931,48 +7139,104 @@
 
   const renderSchoolSettings = () => {
     const profile = schoolProfile();
-    const plusAvailable = profile.country === "CH" && profile.schoolLevel === "gymi";
+    const plusAvailable = profile.countryCode === "CH" && profile.educationSystemId === "ch-gymnasium" && profile.gradingScaleId === "ch_1_to_6_high_is_good";
+    const selectedSubjects = new Set(profile.subjects || []);
+    const scale = gradingScaleById(profile.gradingScaleId);
     return `
       <form class="panel school-settings-card" id="school-settings-form">
-        <div class="panel-header"><div><span>School Settings</span><h2>Schulsystem</h2></div>${C.icon("book")}</div>
-        <p class="panel-note">Lynxly nutzt diese Angaben für Noten, Pluspunkte, Erinnerungen und deinen Tagesfokus.</p>
+        <div class="panel-header"><div><span>Profil</span><h2>Schule und Notensystem</h2></div>${C.icon("book")}</div>
+        <p class="panel-note">Lynxly nutzt diese Angaben für Noten, Pluspunkte, Erinnerungen und deinen Tagesfokus. Du kannst sie jederzeit ändern.</p>
         <div class="preferences-grid">
-          <label>Country / Region
-            <select name="country" id="settings-school-country">
-              ${countryOptions.map((country) => `<option value="${country.id}" ${country.id === profile.country ? "selected" : ""}>${C.escapeHtml(country.label)}</option>`).join("")}
+          <label>Land
+            <select name="countryCode" id="settings-school-country">
+              ${renderCountryOptions(profile.countryCode)}
             </select>
           </label>
-          <label>School level
+          <label class="${countryNeedsRegion(profile.countryCode) ? "" : "is-hidden"}">Kanton / Region
+            <select name="regionCode" id="settings-school-region">
+              ${renderRegionOptions(profile.countryCode, profile.regionCode)}
+            </select>
+          </label>
+          <label>Schulsystem
+            <select name="educationSystemId" id="settings-school-system">
+              ${renderEducationSystemOptions(profile.countryCode, profile.educationSystemId)}
+            </select>
+          </label>
+          <label>Schulstufe
             <select name="schoolLevel" id="settings-school-level">
-              ${renderLevelOptions(profile.country, profile.schoolLevel)}
+              ${renderLevelOptions(profile.countryCode, profile.schoolLevel, profile.educationSystemId)}
             </select>
           </label>
-          <label>Grade system
-            <select name="gradingSystem">
-              ${schoolGradeSystems.map((system) => `<option value="${system.id}" ${system.id === profile.gradingSystem ? "selected" : ""}>${C.escapeHtml(system.label)}</option>`).join("")}
+          <label>Schuljahr
+            <select name="gradeYear">
+              ${renderGradeYearOptions(profile.schoolLevel, profile.gradeYear)}
             </select>
           </label>
-          <label>Language style
+          <label>Notensystem
+            <select name="gradingScaleId" id="settings-grading-scale">
+              ${renderGradingScaleOptions(profile.countryCode, profile.educationSystemId, profile.gradingScaleId)}
+            </select>
+          </label>
+          <label>App-Sprache
+            <select name="appLanguage">
+              ${state.languages.map((language) => `<option value="${language.id}" ${language.id === profile.appLanguage ? "selected" : ""}>${C.escapeHtml(language.name)}</option>`).join("")}
+            </select>
+          </label>
+          <label>Zeitzone
+            <input name="timezone" value="${C.escapeHtml(profile.timezone || "Europe/Zurich")}" />
+          </label>
+          <label>Sprachstil
             <select name="languageStyle">
-              <option value="de_ch" ${profile.languageStyle === "de_ch" ? "selected" : ""}>Swiss German wording</option>
-              <option value="de_standard" ${profile.languageStyle === "de_standard" ? "selected" : ""}>Standard German wording</option>
-              <option value="en_us" ${profile.languageStyle === "en_us" ? "selected" : ""}>American English wording</option>
-              <option value="en_uk" ${profile.languageStyle === "en_uk" ? "selected" : ""}>British English wording</option>
-              <option value="simple" ${profile.languageStyle === "simple" ? "selected" : ""}>Simple wording</option>
+              <option value="de_ch" ${profile.languageStyle === "de_ch" ? "selected" : ""}>Deutsch Schweiz</option>
+              <option value="de_standard" ${profile.languageStyle === "de_standard" ? "selected" : ""}>Standarddeutsch</option>
+              <option value="en_us" ${profile.languageStyle === "en_us" ? "selected" : ""}>Englisch USA</option>
+              <option value="en_uk" ${profile.languageStyle === "en_uk" ? "selected" : ""}>Englisch UK</option>
+              <option value="simple" ${profile.languageStyle === "simple" ? "selected" : ""}>Einfach</option>
             </select>
           </label>
+          <label>Wichtigstes Ziel
+            <select name="primaryGoal">
+              ${mainGoalOptions.map((goal) => `<option value="${goal.id}" ${goal.id === profile.primaryGoal ? "selected" : ""}>${C.escapeHtml(goal.label)}</option>`).join("")}
+            </select>
+          </label>
+          <div class="form-span-full school-subject-picker">
+            <strong>Fächer</strong>
+            <div class="onboarding-choice-grid compact">
+              ${subjectSuggestionOptions.map((subject) => `
+                <label class="onboarding-choice ${selectedSubjects.has(subject.id) ? "selected" : ""}">
+                  <input name="subjects" type="checkbox" value="${subject.id}" ${selectedSubjects.has(subject.id) ? "checked" : ""} />
+                  <strong>${C.escapeHtml(subject.label)}</strong>
+                </label>
+              `).join("")}
+            </div>
+            <label>Eigenes Fach <input name="customSubject" value="" /></label>
+          </div>
+          <div class="form-span-full custom-scale-fields">
+            <strong>Eigenes Notensystem</strong>
+            <p class="panel-note">${C.escapeHtml(gradingScaleExample(scale.id))}</p>
+            <label>Minimum<input name="customMin" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.min ?? scale.min ?? 0)}" /></label>
+            <label>Maximum<input name="customMax" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.max ?? scale.max ?? 100)}" /></label>
+            <label>Genügend ab<input name="customPassingThreshold" type="number" step="0.01" value="${C.escapeHtml(profile.customGradingScale?.passingThreshold ?? scale.passingThreshold ?? 60)}" /></label>
+            <label>Beste Note
+              <select name="customHigherIsBetter">
+                <option value="true" ${(profile.customGradingScale?.higherIsBetter ?? scale.higherIsBetter) ? "selected" : ""}>Hoher Wert</option>
+                <option value="false" ${(profile.customGradingScale?.higherIsBetter ?? scale.higherIsBetter) ? "" : "selected"}>Tiefer Wert</option>
+              </select>
+            </label>
+            <label>Dezimalstellen<input name="customDecimalPrecision" type="number" min="0" max="3" step="1" value="${C.escapeHtml(profile.customGradingScale?.decimalPrecision ?? scale.decimalPrecision ?? 1)}" /></label>
+          </div>
           <label class="toggle-field form-span-full ${plusAvailable ? "" : "is-muted"}">
             <input name="plusPointsEnabled" type="checkbox" ${profile.plusPointsEnabled && plusAvailable ? "checked" : ""} ${plusAvailable ? "" : "disabled"} />
             <span>Pluspunkte aktivieren</span>
-            <small>${plusAvailable ? "Nur für Schweizer Gymi-Profile sichtbar." : "Pluspunkte sind nur für Schweiz + Gymnasium / Gymi verfügbar."}</small>
+            <small>${plusAvailable ? "Nur für Schweizer Gymnasium mit Noten 1 bis 6." : "Pluspunkte sind nur für Schweiz + Gymnasium + Schweizer 1-bis-6-Skala verfügbar."}</small>
           </label>
         </div>
         <div class="school-settings-summary">
-          <article><span>Profil</span><strong>${C.escapeHtml(profile.countryLabel)} · ${C.escapeHtml(profile.schoolLevelLabel)}</strong></article>
-          <article><span>Anzeige</span><strong>${C.escapeHtml(gradeSystemBySchoolId(profile.gradingSystem).label)}</strong></article>
+          <article><span>Profil</span><strong>${C.escapeHtml(profile.countryLabel)} · ${C.escapeHtml(profile.educationSystemLabel)}</strong></article>
+          <article><span>Noten</span><strong>${C.escapeHtml(gradingScaleById(profile.gradingScaleId).label)}</strong></article>
         </div>
         <div class="button-row">
-          <button class="primary-button" type="submit">Schulsystem speichern</button>
+          <button class="primary-button" type="submit">Schule speichern</button>
           <button class="secondary-button reset-school-onboarding" type="button">Onboarding zurücksetzen</button>
         </div>
       </form>
@@ -7222,120 +7486,196 @@
       save();
       render();
     }));
-    document.querySelector(".onboarding-start")?.addEventListener("click", () => {
-      state.onboarding.onboardingStep = 1;
-      save();
-      render();
-    });
     document.querySelector(".onboarding-demo")?.addEventListener("click", () => {
       applySampleData();
       state.onboarding = {
         ...state.onboarding,
+        onboardingVersion: 2,
         onboardingStep: 0,
-        selectedGoal: "exam",
+        selectedGoal: "exam_preparation",
         selectedSubject: "Mathe",
+        accountMethod: "guest-demo",
+        validationMessage: "",
         guestMode: true,
         signInSkipped: true,
         valueMomentSeen: true,
         firstReviewCompleted: false,
         completedAt: new Date().toISOString()
       };
-      state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: true });
-      save();
-      location.hash = "#dashboard";
-      render();
-    });
-    document.querySelector(".onboarding-later")?.addEventListener("click", () => {
-      signInOnboardingUser("guest");
-      state.onboarding.onboardingStep = 0;
-      state.onboarding.completedAt = new Date().toISOString();
+      state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: true, onboardingCompletedAt: new Date().toISOString(), onboardingVersion: 2 });
       save();
       location.hash = "#dashboard";
       render();
     });
     document.querySelectorAll(".onboarding-back").forEach((button) => button.addEventListener("click", () => {
+      state.onboarding.validationMessage = "";
       state.onboarding.onboardingStep = Math.max(0, Number(button.dataset.step || 0));
       save();
       render();
     }));
-    document.querySelector("#onboarding-goal-form")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = formData(event.currentTarget);
-      state.onboarding.selectedGoal = data.selectedGoal || "exam";
-      state.onboarding.goal = state.onboarding.selectedGoal;
-      state.onboarding.onboardingStep = 2;
-      save();
-      render();
-    });
-    document.querySelector("#onboarding-subject-form")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const data = formData(event.currentTarget);
-      state.onboarding.selectedSubject = String(data.selectedSubject || "Mathe").trim() || "Mathe";
-      state.onboarding.targetDate = data.targetDate || "";
-      state.onboarding.targetDate && (state.onboarding.firstAction = "preview");
-      state.onboarding.temporaryDeck = null;
-      state.onboarding.generatedPreview = null;
-      state.onboarding.onboardingStep = 3;
-      save();
-      render();
-    });
-    document.querySelector("#onboarding-notes-form")?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const form = event.currentTarget;
-      const data = formData(form);
-      const file = form.elements.notesFile?.files?.[0];
-      let text = String(data.uploadedNotesText || "").trim();
-      let status = "";
-      if (file) {
-        state.onboarding.uploadedFileName = file.name || "";
-        const kind = notesFileKind(file);
-        if (kind === "text") {
-          text = (await file.text()).slice(0, 8000).trim() || text;
-          status = `${file.name} wurde lokal gelesen.`;
-        } else if (kind === "pdf" || kind === "image") {
-          status = `${file.name}: OCR/PDF-Auslesen ist in dieser lokalen Demo noch nicht aktiv. Du kannst Text einfügen oder mit einer Demo-Preview starten.`;
-        } else {
-          status = "Dieser Dateityp wird lokal noch nicht ausgelesen. Du kannst Text einfügen oder manuell starten.";
-        }
-      }
-      state.onboarding.uploadedNotesText = text;
-      state.onboarding.uploadStatus = status;
-      state.onboarding.temporaryDeck = null;
-      state.onboarding.generatedPreview = null;
-      ensureOnboardingPreview();
-      state.onboarding.onboardingStep = 4;
-      save();
-      render();
-    });
-    document.querySelector(".onboarding-manual-preview")?.addEventListener("click", () => {
-      state.onboarding.uploadedNotesText = state.onboarding.uploadedNotesText || "";
-      state.onboarding.uploadStatus = "Manueller Start: Lynxly erstellt ein kleines Starter-Set aus deinem Ziel und Fach.";
-      state.onboarding.temporaryDeck = null;
-      state.onboarding.generatedPreview = null;
-      ensureOnboardingPreview();
-      state.onboarding.onboardingStep = 4;
-      save();
-      render();
-    });
-    document.querySelector(".onboarding-save-start")?.addEventListener("click", () => {
-      ensureOnboardingPreview();
-      state.onboarding.onboardingStep = 5;
+    document.querySelector(".onboarding-guest-start")?.addEventListener("click", () => {
+      signInOnboardingUser("guest", { completeSchoolProfile: false });
+      state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: false, onboardingVersion: 2 });
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 1;
       save();
       render();
     });
     document.querySelectorAll(".onboarding-auth-choice").forEach((button) => button.addEventListener("click", () => {
-      startOnboardingFirstReview(button.dataset.method || "email");
-    }));
-    document.querySelectorAll(".onboarding-guest-start").forEach((button) => button.addEventListener("click", () => {
-      startOnboardingFirstReview("guest");
-    }));
-    document.querySelector(".settings-logout")?.addEventListener("click", () => {
-      state.user.loggedIn = false;
-      state.ui.cardCreateOpen = false;
+      const method = button.dataset.method || "";
+      if (button.disabled || !onboardingAuthAvailable()[method]) {
+        state.onboarding.validationMessage = `${method === "email" ? "E-Mail" : method === "apple" ? "Apple" : "Google"} ist für diese Beta noch nicht verbunden. Nutze vorerst "Ohne Konto testen"; deine lokalen Daten bleiben erhalten.`;
+        save();
+        render();
+        return;
+      }
+      state.onboarding.validationMessage = "Diese Anmeldung ist noch nicht mit dem Backend verbunden.";
       save();
-      location.hash = "#dashboard";
+      render();
+    }));
+    document.querySelector("#onboarding-country-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      const countryCode = countryById(data.countryCode).id;
+      if (!countryCode) {
+        state.onboarding.validationMessage = "Bitte wähle dein Land aus.";
+        save();
+        render();
+        return;
+      }
+      const existing = schoolProfile();
+      const systemId = defaultEducationSystemForCountry(countryCode);
+      state.schoolProfile = buildSchoolProfile({
+        countryCode,
+        regionCode: defaultRegionForCountry(countryCode),
+        educationSystemId: systemId,
+        schoolLevel: defaultLevelForEducationSystem(systemId),
+        gradingScaleId: schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(countryCode, systemId) : existing.gradingScaleId
+      }, existing, false);
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = countryNeedsRegion(countryCode) ? 2 : 3;
+      save();
       render();
     });
+    document.querySelector("#onboarding-region-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      state.schoolProfile = buildSchoolProfile({ ...schoolProfile(), regionCode: data.regionCode || defaultRegionForCountry(schoolProfile().countryCode) }, schoolProfile(), false);
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 3;
+      save();
+      render();
+    });
+    document.querySelector("#onboarding-system-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      const countryCode = schoolProfile().countryCode;
+      const systemId = educationSystemById(countryCode, data.educationSystemId).id;
+      state.schoolProfile = buildSchoolProfile({
+        ...schoolProfile(),
+        educationSystemId: systemId,
+        schoolLevel: defaultLevelForEducationSystem(systemId),
+        gradingScaleId: schoolCatalog.defaultGradingScaleFor ? schoolCatalog.defaultGradingScaleFor(countryCode, systemId) : schoolProfile().gradingScaleId
+      }, schoolProfile(), false);
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 4;
+      save();
+      render();
+    });
+    document.querySelector("#onboarding-level-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      state.schoolProfile = buildSchoolProfile({
+        ...schoolProfile(),
+        schoolLevel: data.schoolLevel,
+        gradeYear: data.gradeYear
+      }, schoolProfile(), false);
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 5;
+      save();
+      render();
+    });
+    document.querySelector("#onboarding-grading-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      const customGradingScale = data.gradingScaleId === "custom" ? {
+        min: Number(data.customMin || 0),
+        max: Number(data.customMax || 100),
+        passingThreshold: Number(data.customPassingThreshold || 60),
+        higherIsBetter: data.customHigherIsBetter !== "false",
+        decimalPrecision: Math.max(0, Math.min(3, Number(data.customDecimalPrecision || 1)))
+      } : null;
+      state.schoolProfile = buildSchoolProfile({
+        ...schoolProfile(),
+        gradingScaleId: data.gradingScaleId,
+        customGradingScale,
+        plusPointsEnabled: schoolProfile().countryCode === "CH" && schoolProfile().educationSystemId === "ch-gymnasium" && data.gradingScaleId === "ch_1_to_6_high_is_good" ? "on" : ""
+      }, schoolProfile(), false);
+      state.settings.gradeSystem = state.schoolProfile.appGradeSystem;
+      state.settings.language = state.schoolProfile.language;
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 6;
+      save();
+      render();
+    });
+    document.querySelector("#onboarding-subjects-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const data = formData(form);
+      const subjects = Array.from(form.querySelectorAll('input[name="subjects"]:checked')).map((input) => input.value);
+      const custom = String(data.customSubject || "").trim();
+      if (custom) subjects.push(`custom:${custom}`);
+      state.schoolProfile = buildSchoolProfile({
+        ...schoolProfile(),
+        subjects: Array.from(new Set(subjects)),
+        primaryGoal: data.primaryGoal || schoolProfile().primaryGoal
+      }, schoolProfile(), false);
+      state.onboarding.selectedGoal = state.schoolProfile.primaryGoal;
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 7;
+      save();
+      render();
+    });
+    document.querySelector(".onboarding-skip-subjects")?.addEventListener("click", () => {
+      state.onboarding.validationMessage = "";
+      state.onboarding.onboardingStep = 7;
+      save();
+      render();
+    });
+    document.querySelector("#onboarding-first-action-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = formData(event.currentTarget);
+      const action = data.firstAction || "exam";
+      const completedAt = new Date().toISOString();
+      signInOnboardingUser("guest", { completeSchoolProfile: false });
+      state.schoolProfile = normalizeSchoolProfile({ ...schoolProfile(), onboardingCompleted: true, onboardingCompletedAt: completedAt, onboardingVersion: 2 });
+      state.onboarding.completedAt = completedAt;
+      state.onboarding.firstAction = action;
+      state.onboarding.validationMessage = "";
+      state.todaysFocus = { ...window.StudyUpSeed.todaysFocus, version: 0, date: "" };
+      if (action === "exam") {
+        state.ui.showEventForm = true;
+        state.ui.showExamForm = true;
+        location.hash = "#planner";
+      } else if (action === "cards") {
+        state.ui.cardCreateOpen = true;
+        state.ui.cardCreateMode = "manual";
+        location.hash = "#cards";
+      } else if (action === "grades") {
+        state.ui.showSubjectForm = true;
+        location.hash = "#grades";
+      } else if (action === "material") {
+        state.ui.materialSheetOpen = true;
+        location.hash = "#dashboard";
+      } else if (action === "ask") {
+        location.hash = "#bot";
+      } else {
+        location.hash = "#dashboard";
+      }
+      save();
+      render();
+    });
+    document.querySelector(".settings-logout")?.addEventListener("click", logoutCurrentUser);
     document.querySelector(".export-local-data")?.addEventListener("click", () => {
       const payload = JSON.stringify(state, null, 2);
       const blob = new Blob([payload], { type: "application/json" });
@@ -7402,13 +7742,31 @@
       pushNotification("Präferenzen gespeichert", "Home und Tagesfokus wurden angepasst.");
       render();
     });
-    bindSchoolLevelSync("#settings-school-country", "#settings-school-level");
+    bindSchoolLevelSync("#settings-school-country", "#settings-school-level", "#settings-school-system", "#settings-grading-scale", "#settings-school-region");
     document.querySelector("#school-settings-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const form = event.currentTarget;
       const data = formData(form);
+      const currentProfile = schoolProfile();
+      const hasExistingGrades = state.subjects.some((subject) => (subject.grades || []).length);
+      if (hasExistingGrades && data.gradingScaleId !== currentProfile.gradingScaleId) {
+        const ok = window.confirm("Du änderst das Notensystem. Bestehende Noten bleiben unverändert und werden nicht automatisch umgerechnet. Fortfahren?");
+        if (!ok) return;
+      }
+      const subjects = Array.from(form.querySelectorAll('input[name="subjects"]:checked')).map((input) => input.value);
+      const customSubject = String(data.customSubject || "").trim();
+      if (customSubject) subjects.push(`custom:${customSubject}`);
+      const customGradingScale = data.gradingScaleId === "custom" ? {
+        min: Number(data.customMin || 0),
+        max: Number(data.customMax || 100),
+        passingThreshold: Number(data.customPassingThreshold || 60),
+        higherIsBetter: data.customHigherIsBetter !== "false",
+        decimalPrecision: Math.max(0, Math.min(3, Number(data.customDecimalPrecision || 1)))
+      } : null;
       state.schoolProfile = buildSchoolProfile({
         ...data,
+        subjects: Array.from(new Set(subjects)),
+        customGradingScale,
         plusPointsEnabled: form.elements.plusPointsEnabled?.checked ? "on" : ""
       }, state.schoolProfile, true);
       state.settings.gradeSystem = state.schoolProfile.appGradeSystem;
@@ -7420,6 +7778,8 @@
     });
     document.querySelector(".reset-school-onboarding")?.addEventListener("click", () => {
       state.schoolProfile = { ...schoolProfile(), onboardingCompleted: false };
+      state.onboarding.onboardingStep = 1;
+      state.onboarding.validationMessage = "";
       save();
       render();
     });
@@ -9027,16 +9387,7 @@
     render();
     requestAnimationFrame(() => document.querySelector(".material-sheet button")?.focus());
   }));
-  logoutButton?.addEventListener("click", () => {
-    ensureCollections();
-    state.user.loggedIn = false;
-    state.ui.selectedGradeSubject = null;
-    state.ui.selectedPartialGroup = null;
-    state.ui.cardCreateOpen = false;
-    save();
-    location.hash = "#dashboard";
-    render();
-  });
+  logoutButton?.addEventListener("click", logoutCurrentUser);
 
   ensureCollections();
   state.ui.notificationCenterOpen = false;
