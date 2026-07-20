@@ -13,7 +13,7 @@ delete process.env.OPENAI_API_KEY;
 
 const { server } = require("../server");
 const entitlements = require("../entitlements-store");
-const { COOKIE_NAME, createSessionToken, enforceRateLimit } = require("../server-security");
+const { COOKIE_NAME, createSessionToken, enforceRateLimit, verifySessionToken } = require("../server-security");
 const { monthKey } = require("../premium-core");
 
 let baseUrl = "";
@@ -114,6 +114,33 @@ test("client-supplied user IDs are rejected", async () => {
   });
   assert.equal(result.status, 401);
   assert.equal(result.body.error, "authentication_required");
+});
+
+test("auth session issues an http-only anonymous session without exposing the token", async () => {
+  const jar = {};
+  const result = await request("/api/auth/session", {}, jar);
+  const serialized = JSON.stringify(result.body);
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.session.active, true);
+  assert.equal(result.body.anonymous, true);
+  assert.ok(jar[COOKIE_NAME]);
+  assert.ok(verifySessionToken(decodeURIComponent(jar[COOKIE_NAME])));
+  assert.equal(serialized.includes("session:"), false);
+  assert.equal(serialized.includes(jar[COOKIE_NAME]), false);
+});
+
+test("auth logout clears and revokes the current server session", async () => {
+  const jar = {};
+  await request("/api/auth/session", {}, jar);
+  const token = decodeURIComponent(jar[COOKIE_NAME]);
+  assert.ok(verifySessionToken(token));
+
+  const logout = await request("/api/auth/logout", { method: "POST" }, jar);
+  assert.equal(logout.status, 200);
+  assert.equal(logout.body.ok, true);
+  assert.equal(jar[COOKIE_NAME], "");
+  assert.equal(verifySessionToken(token), null);
 });
 
 test("missing production secrets stop startup", () => {
