@@ -1,0 +1,10 @@
+.env
+.env.*
+.lynxly-entitlements.json
+*.log
+lynxly-server*.log
+screenshots/
+start-*.bat
+src/assets/leagues/
+tests/
+scripts/

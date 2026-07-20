@@ -11,6 +11,7 @@ const REQUIRED_PRODUCTION_ENV = [
   "LYNXLY_SESSION_SECRET",
   "ALLOWED_FRONTEND_ORIGIN"
 ];
+const revokedSessions = new Map();
 
 const errorMessages = {
   authentication_required: "Authentication required.",
@@ -54,6 +55,24 @@ const base64url = (value) => Buffer.from(value).toString("base64url");
 const unbase64url = (value) => Buffer.from(value, "base64url").toString("utf8");
 const hmac = (value) => crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("base64url");
 
+const cleanupRevokedSessions = (nowMs = Date.now()) => {
+  for (const [sessionId, expiresAt] of revokedSessions.entries()) {
+    if (expiresAt <= nowMs) revokedSessions.delete(sessionId);
+  }
+};
+
+const revokeSessionId = (sessionId, nowMs = Date.now()) => {
+  if (!sessionId) return false;
+  cleanupRevokedSessions(nowMs);
+  revokedSessions.set(String(sessionId), nowMs + SESSION_TTL_SECONDS * 1000);
+  return true;
+};
+
+const isSessionRevoked = (sessionId, nowMs = Date.now()) => {
+  cleanupRevokedSessions(nowMs);
+  return Boolean(sessionId && revokedSessions.has(String(sessionId)));
+};
+
 const createSessionToken = (sessionId = crypto.randomUUID(), nowMs = Date.now()) => {
   const payload = {
     sid: sessionId,
@@ -74,6 +93,7 @@ const verifySessionToken = (token, nowMs = Date.now()) => {
   try {
     const payload = JSON.parse(unbase64url(encoded));
     if (!payload.sid || !payload.exp || payload.exp <= nowMs) return null;
+    if (isSessionRevoked(payload.sid, nowMs)) return null;
     return payload;
   } catch (error) {
     return null;
@@ -83,6 +103,11 @@ const verifySessionToken = (token, nowMs = Date.now()) => {
 const serializeSessionCookie = (token) => {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
   return `${COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}${secure}`;
+};
+
+const clearSessionCookie = () => {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure}`;
 };
 
 const appendSetCookie = (res, cookie) => {
@@ -363,6 +388,9 @@ module.exports = {
   sendError,
   handleApiError,
   serializeSessionCookie,
+  clearSessionCookie,
+  revokeSessionId,
+  isSessionRevoked,
   requireProductionConfig,
   setSecurityHeaders,
   assertTrustedOrigin,

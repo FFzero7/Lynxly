@@ -31,6 +31,8 @@ const {
   reserveCredits,
   completeCreditCharge,
   refundReservedCredits,
+  clearSessionCookie,
+  revokeSessionId,
   sendJson,
   sendError,
   handleApiError,
@@ -319,6 +321,46 @@ const handleEntitlements = async (req, res) => {
   }
 };
 
+const handleAuthSession = async (req, res) => {
+  if (req.method !== "GET") {
+    sendError(res, 403, "forbidden", { message: "Method not allowed." });
+    return;
+  }
+  try {
+    const user = getAuthenticatedUser(req, res);
+    sendJson(res, 200, {
+      authenticated: false,
+      anonymous: Boolean(user.anonymous),
+      account: { type: "anonymous" },
+      session: { active: true },
+      message: "Lokale anonyme Session aktiv. Konto-Login ist noch nicht verbunden."
+    });
+  } catch (error) {
+    await handleApiError(res, error);
+  }
+};
+
+const handleAuthLogout = async (req, res) => {
+  if (req.method !== "POST") {
+    sendError(res, 403, "forbidden", { message: "Method not allowed." });
+    return;
+  }
+  try {
+    const user = getAuthenticatedUser(req, res, { issue: false });
+    revokeSessionId(user.sessionId);
+  } catch (error) {
+    if (error.code !== "authentication_required") {
+      await handleApiError(res, error);
+      return;
+    }
+  }
+  res.setHeader("Set-Cookie", clearSessionCookie());
+  sendJson(res, 200, {
+    ok: true,
+    message: "Du wurdest abgemeldet. Lokale Lerninhalte bleiben erhalten."
+  });
+};
+
 const handleTrialStart = async (req, res) => {
   if (req.method !== "POST") {
     sendError(res, 403, "forbidden", { message: "Method not allowed." });
@@ -421,7 +463,7 @@ const isAllowedStaticPath = (pathname) => {
   if (/^\/src\/assets\/[a-zA-Z0-9/_-]+\.(png|jpg|jpeg|svg|webp|ico)$/i.test(clean)) return true;
   if (/^\/src\/styles\/[a-zA-Z0-9/_-]+\.css$/i.test(clean)) return true;
   if (/^\/src\/modules\/[a-zA-Z0-9_-]+\.js$/i.test(clean)) return true;
-  if (/^\/src\/(app|components|data|storage|styles|premium-client|premium-config)\.(js|css)$/i.test(clean)) return true;
+  if (/^\/src\/(app|components|data|storage|styles|school-catalog|premium-client|premium-config)\.(js|css)$/i.test(clean)) return true;
   if (/^\/(manifest|site)\.json$/i.test(clean)) return true;
   if (/^\/favicon\.(ico|png|svg)$/i.test(clean)) return true;
   return false;
@@ -484,6 +526,8 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === "/api/entitlements") return handleEntitlements(req, res);
+  if (url.pathname === "/api/auth/session") return handleAuthSession(req, res);
+  if (url.pathname === "/api/auth/logout") return handleAuthLogout(req, res);
   if (url.pathname === "/api/trial/start") return handleTrialStart(req, res);
   if (url.pathname === "/api/exam-pass/activate-demo") return handleExamPassDemo(req, res);
   if (url.pathname === "/api/exam-pass/create-checkout") return handleExamPassCheckout(req, res);
